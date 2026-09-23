@@ -6,17 +6,84 @@
   <title>Конвертер валют і одиниць</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
-<!-- Шапка з назвою застосунку -->
+<header>
+  <h1>Конвертер валют і одиниць</h1>
+</header>
 
-<!-- Блок вибору типу конвертації: валюта / довжина / вага -->
+<main>
 
-<!-- Форма введення значення та вибору одиниць -->
+  <section aria-labelledby="conversion-type-title">
+    <h2 id="conversion-type-title">Вибір типу конвертації</h2>
 
-<!-- Блок результату конвертації -->
+    <label for="conversion-type">Тип конвертації:</label>
 
-<!-- Підвал -->
+    <select id="conversion-type" name="conversion-type">
+      <option value="currency">Валюта</option>
+      <option value="length">Довжина</option>
+      <option value="weight">Вага</option>
+    </select>
+  </section>
+
+  <section aria-labelledby="form-title">
+    <h2 id="form-title">Форма конвертації</h2>
+
+    <form>
+
+      <div>
+        <label for="amount">Значення:</label>
+
+        <input
+                type="number"
+                id="amount"
+                name="amount"
+                placeholder="Введіть значення"
+                min="0"
+                step="any"
+                required
+        >
+      </div>
+
+      <div>
+        <label for="from-unit">З:</label>
+
+        <select id="from-unit" name="from-unit">
+          <option value="uah">UAH</option>
+          <option value="usd">USD</option>
+          <option value="eur">EUR</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="to-unit">У:</label>
+
+        <select id="to-unit" name="to-unit">
+          <option value="usd">USD</option>
+          <option value="uah">UAH</option>
+          <option value="eur">EUR</option>
+        </select>
+      </div>
+
+      <button type="submit">Конвертувати</button>
+
+    </form>
+
+    <p id="result" aria-live="polite">
+      Результат конвертації з'явиться тут.
+    </p>
+
+  </section>
+
+</main>
+
+<footer>
+  <p>
+    Примітка: курс валют є орієнтовним і може змінюватися.
+  </p>
+</footer>
+
 <script src="js/app.js"></script>
 </body>
 </html>
