@@ -46,25 +46,29 @@
         >
       </div>
       <div class="unit-fields">
-        <div>
-        <label for="from-unit">З:</label>
 
-        <select id="from-unit" name="from-unit">
-          <option value="uah">UAH</option>
-          <option value="usd">USD</option>
-          <option value="eur">EUR</option>
-        </select>
-        </div>
-
-        <div>
-          <label for="to-unit">У:</label>
-
-          <select id="to-unit" name="to-unit">
+        <div class="unit-field">
+          <label for="from-unit">З:</label>
+          <select id="from-unit" name="from-unit">
+            <option value="uah">UAH</option>
             <option value="usd">USD</option>
-           <option value="uah">UAH</option>
             <option value="eur">EUR</option>
           </select>
         </div>
+
+        <button type="button" class="swap-button" id="swap-button" aria-label="Поміняти місцями">
+          Поміняти місцями
+        </button>
+
+        <div class="unit-field">
+          <label for="to-unit">У:</label>
+          <select id="to-unit" name="to-unit">
+            <option value="usd">USD</option>
+            <option value="uah">UAH</option>
+            <option value="eur">EUR</option>
+          </select>
+        </div>
+
       </div>
 
       <button type="submit">Конвертувати</button>
