@@ -5,6 +5,35 @@ const rates = {
     EUR: 0.92,
     UAH: 41.5
 };
+const listContainer = document.querySelector('#rates-list');
+const ratesCount = document.querySelector('#rates-count');
+const threshold = 10;
+// Створює список валют на основі об'єкта rates.
+// Додає курс, атрибут data-rate та клас big-rate для курсів понад поріг.
+function renderRates(rates) {
+    for (const [currency, rate] of Object.entries(rates)) {
+        const li = document.createElement('li');
+
+        li.textContent = `${currency}: ${rate}`;
+
+        li.setAttribute('data-rate', rate);
+
+        if (rate > threshold) {
+            li.classList.add('big-rate');
+        }
+        listContainer.append(li);
+    }
+}
+renderRates(rates);
+ratesCount.textContent = `Кількість валют: ${Object.entries(rates).length}`;
+const exampleRate = document.querySelector('#example-rate');
+
+if (exampleRate) {
+    exampleRate.remove();
+}
+
+
+
 // Виводить курс валют
 function showRates() {
     for (const currency of Object.keys(rates)) {
