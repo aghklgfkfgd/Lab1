@@ -30,7 +30,7 @@
   <section aria-labelledby="form-title">
     <h2 id="form-title">Форма конвертації</h2>
 
-    <form>
+    <form id="conversion-form">
 
       <div>
         <label for="amount">Значення:</label>
@@ -40,7 +40,7 @@
                 id="amount"
                 name="amount"
                 placeholder="Введіть значення"
-                min="0"
+                min="0.01"
                 step="any"
                 required
         >
@@ -75,9 +75,12 @@
 
     </form>
 
-    <p id="result" aria-live="polite">
-      Результат конвертації з'явиться тут.
-    </p>
+    <h3>Історія конвертацій</h3>
+
+    <ul id="history-list"></ul>
+
+    <p id="history-count">Кількість конвертацій: 0</p>
+
 
     <h3 id="example-rate">Курси валют</h3>
 
