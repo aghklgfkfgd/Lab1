@@ -73,6 +73,7 @@
 
       <button type="submit">Конвертувати</button>
 
+
     </form>
 
     <h3>Історія конвертацій</h3>
@@ -83,7 +84,13 @@
 
 
     <h3 id="example-rate">Курси валют</h3>
-
+    <p id="loading-message" hidden>
+      Завантаження курсів валют...
+    </p>
+    <p id="error-message" role="alert" hidden></p>
+    <button type="button" id="refresh-button">
+      Оновити
+    </button>
     <ul id="rates-list"></ul>
 
     <p id="rates-count">Кількість валют: 0</p>

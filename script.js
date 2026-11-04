@@ -1,4 +1,8 @@
 ﻿console.log('script.js підключено')
+const loadingMessage =
+    document.querySelector('#loading-message');
+const errorMessage =
+    document.querySelector('#error-message');
 // Об'єкт з курсом валют
 const rates = {
     USD: 1,
@@ -14,19 +18,28 @@ const threshold = 10;
 function renderRates(rates, container = listContainer) {
     container.innerHTML = '';
 
-    for (const [currency, rate] of Object.entries(rates)) {
+    if (!Array.isArray(rates)) {
+        rates = Object.entries(rates).map(([currency, rate]) => ({
+            base: 'UAH',
+            quote: currency,
+            rate: rate
+        }));
+    }
+
+    for (const item of rates) {
         const li = document.createElement('li');
 
-        if (typeof rate === 'object' && rate !== null) {
+        if (item.from && item.to) {
             li.textContent =
-                `${rate.amount} ${rate.from} → ` +
-                `${rate.result.toFixed(2)} ${rate.to}`;
+                `${item.amount} ${item.from.toUpperCase()} → ${item.result.toFixed(2)} ${item.to.toUpperCase()}`;
+
         } else {
-            li.textContent = `${currency}: ${rate}`;
+            li.textContent =
+                `${item.base} → ${item.quote}: ${item.rate}`;
 
-            li.setAttribute('data-rate', rate);
+            li.setAttribute('data-rate', item.rate);
 
-            if (rate > threshold) {
+            if (item.rate > threshold) {
                 li.classList.add('big-rate');
             }
         }
@@ -34,6 +47,7 @@ function renderRates(rates, container = listContainer) {
         container.append(li);
     }
 }
+
 
 renderRates(rates);
 
@@ -82,6 +96,19 @@ const history = [];
 
 // Форма конвертації
 const form = document.querySelector('#conversion-form');
+
+amountInput.addEventListener('input', () => {
+    if (
+        amountInput.value !== '' &&
+        Number(amountInput.value) <= 0
+    ) {
+        amountInput.setCustomValidity(
+            'Сума має бути додатною'
+        );
+    } else {
+        amountInput.setCustomValidity('');
+    }
+});
 form.addEventListener('submit', (event) => {
     event.preventDefault();
     if (!form.reportValidity()) {
@@ -90,18 +117,6 @@ form.addEventListener('submit', (event) => {
     const amount = Number(amountInput.value);
     const from = fromUnit.value;
     const to = toUnit.value;
-    amountInput.addEventListener('input', () => {
-        if (
-            amountInput.value !== '' &&
-            Number(amountInput.value) <= 0
-        ) {
-            amountInput.setCustomValidity(
-                'Сума має бути додатною'
-            );
-        } else {
-            amountInput.setCustomValidity('');
-        }
-    });
     const convertedAmount = convert(amount, rates[to.toUpperCase()] / rates[from.toUpperCase()]);
 
     const conversion = {
@@ -112,12 +127,7 @@ form.addEventListener('submit', (event) => {
     };
 
     history.push(conversion);
-    renderRates(
-        Object.fromEntries(
-            history.map((item, index) => [index + 1, item])
-        ),
-        historyList
-    );
+    renderRates(history, historyList);
 
     historyCount.textContent =
         `Кількість конвертацій: ${history.length}`;
@@ -150,3 +160,51 @@ function updateResult() {
 
 fromUnit.addEventListener('change', updateResult);
 toUnit.addEventListener('change', updateResult);
+
+
+const API_URL =
+    'https://api.frankfurter.dev/v2/rate/usd/uah';
+// Завантажує курси валют із Frankfurter API
+async function loadData() {
+    loadingMessage.hidden = false;
+    try {
+        errorMessage.hidden = true;
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+            throw new Error(
+                'Помилка HTTP: ' + response.status
+            );
+        }
+        const data = await response.json();
+
+        console.log(data);
+
+    } catch (error) {
+
+        console.error('Помилка завантаження:', error);
+
+        if (error.message === 'Перевірте код валюти') {
+
+            errorMessage.textContent =
+                'Перевірте код валюти.';
+
+        } else {
+
+            errorMessage.textContent =
+                'Не вдалося завантажити курси валют.';
+
+        }
+
+        errorMessage.hidden = false;
+
+    }
+    finally {
+        loadingMessage.hidden = true;
+    }
+}
+loadData();
+const refreshButton = document.querySelector('#refresh-button');
+
+refreshButton.addEventListener('click', () => {
+    loadData();
+});
