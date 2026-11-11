@@ -1,152 +1,238 @@
-﻿console.log('script.js підключено')
-// Об'єкт з курсом валют
-const rates = {
-    USD: 1,
-    EUR: 0.92,
-    UAH: 41.5
+﻿// Обрав Vue 3, оскільки він підтримує реактивний стан та властивості для автоматичного обчислення
+// результату конвертації без додаткової кнопки.
+console.log('script.js підключено')
+
+const { createApp } = Vue;
+// Функцію renderRates() видалено.
+// Відображення курсів валют тепер виконується через директиву v-for.
+// Компонент форми конвертації
+const ConverterForm = {
+    props: ['rates'],
+
+    data() {
+        return {
+            amount: 100,
+            fromUnit: 'USD',
+            toUnit: 'EUR'
+        };
+    },
+    emits: ['convert'],
+    // Автоматичне обчислення результату
+    computed: {
+        result() {
+            if (
+                !Number.isFinite(this.amount) ||
+                this.amount <= 0
+            ) {
+                return 0;
+            }
+
+            const rate =
+                this.rates[this.toUnit] /
+                this.rates[this.fromUnit];
+
+            return this.amount * rate;
+        }
+    },
+    methods: {
+        swapUnits() {
+            const temp = this.fromUnit;
+            this.fromUnit = this.toUnit;
+            this.toUnit = temp;
+        },
+        submitConversion() {
+            if (
+                !Number.isFinite(this.amount) ||
+                this.amount <= 0
+            ) {
+                return;
+            }
+
+            this.$emit('convert', {
+                amount: this.amount,
+                from: this.fromUnit,
+                to: this.toUnit,
+                result: this.result
+            });
+        }
+    },
+
+    template: `
+        <div>
+            <h3>Конвертер валют</h3>
+
+            <label>Сума:</label>
+            <input
+                type="number"
+                v-model.number="amount"
+                min="0.01"
+                step="any"
+            >
+
+            <label>З:</label>
+            <select v-model="fromUnit">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="UAH">UAH</option>
+            </select>
+            
+            <label>У:</label>
+            <select v-model="toUnit">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="UAH">UAH</option>
+            </select>
+            <label></label>
+            <button type="button" @click="swapUnits">
+                Поміняти місцями
+            </button>
+            <p>
+                Результат:
+                {{ result.toFixed(2) }} {{ toUnit }}
+            </p>
+
+            <button type="button" @click="submitConversion">
+                Конвертація
+            </button>
+        </div>
+    `
 };
-const listContainer = document.querySelector('#rates-list');
-const ratesCount = document.querySelector('#rates-count');
-const threshold = 10;
-// Створює список валют на основі об'єкта rates.
-// Додає курс, атрибут data-rate та клас big-rate для курсів понад поріг.
+const RatesList = {
+    props: ['rates', 'selectedId'],
 
-function renderRates(rates, container = listContainer) {
-    container.innerHTML = '';
+    emits: ['select'],
 
-    for (const [currency, rate] of Object.entries(rates)) {
-        const li = document.createElement('li');
+    computed: {
+        rateItems() {
+            return [
+                {
+                    id: 1,
+                    base: 'USD',
+                    quote: 'EUR',
+                    rate: this.rates.EUR / this.rates.USD
+                },
+                {
+                    id: 2,
+                    base: 'USD',
+                    quote: 'UAH',
+                    rate: this.rates.UAH / this.rates.USD
+                },
+                {
+                    id: 3,
+                    base: 'EUR',
+                    quote: 'UAH',
+                    rate: this.rates.UAH / this.rates.EUR
+                }
+            ];
+        }
+    },
 
-        if (typeof rate === 'object' && rate !== null) {
-            li.textContent =
-                `${rate.amount} ${rate.from} → ` +
-                `${rate.result.toFixed(2)} ${rate.to}`;
-        } else {
-            li.textContent = `${currency}: ${rate}`;
+    template: `
+        <ul>
+            <li
+                v-for="item in rateItems"
+                :key="item.id"
+                @click="$emit('select', item.id)"
+                :class="{ 'big-rate': item.id === selectedId }"
+                style="cursor: pointer"
+            >
+                {{ item.base }} → {{ item.quote }}:
+                {{ item.rate.toFixed(2) }}
+            </li>
+        </ul>
+    `
+};
 
-            li.setAttribute('data-rate', rate);
+createApp({
+    components: {
+        ConverterForm,
+        RatesList
+    },
 
-            if (rate > threshold) {
-                li.classList.add('big-rate');
+    data() {
+        return {
+            rates: {
+                USD: 1,
+                EUR: 0.92,
+                UAH: 41.5
+            },
+
+            history: [],
+            selectedRateId: null,
+            loading: false,
+            error: ''
+        };
+    },
+
+    computed: {
+        historyCount() {
+            return this.history.length;
+        }
+    },
+
+    methods: {
+        selectRate(id) {
+            this.selectedRateId = id;
+        },
+
+        addConversion(conversion) {
+            this.history.push({
+                ...conversion,
+                id: Date.now()
+            });
+        },
+
+        async loadData() {
+            this.loading = true;
+            this.error = '';
+
+            try {
+                const urls = [
+                    'https://api.frankfurter.dev/v2/rate/usd/uah',
+                    'https://api.frankfurter.dev/v2/rate/eur/uah'
+                ];
+
+                const responses = await Promise.all(
+                    urls.map(url => fetch(url))
+                );
+
+                for (const response of responses) {
+                    if (response.status === 422) {
+                        throw new Error('Перевірте код валюти');
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(
+                            'Помилка HTTP: ' + response.status
+                        );
+                    }
+                }
+
+                const data = await Promise.all(
+                    responses.map(response => response.json())
+                );
+
+                this.rates = {
+                    USD: 1,
+                    UAH: data[0].rate,
+                    EUR: data[0].rate / data[1].rate
+                };
+
+            } catch (error) {
+                console.error('Помилка завантаження:', error);
+
+                this.error = error.message === 'Перевірте код валюти'
+                    ? 'Перевірте код валюти.'
+                    : 'Не вдалося завантажити курси валют.';
+            } finally {
+                this.loading = false;
             }
         }
+    },
 
-        container.append(li);
-    }
-}
+    mounted() {
+        this.loadData();
+    },
 
-renderRates(rates);
+}).mount('#app');
 
-ratesCount.textContent = `Кількість валют: ${Object.entries(rates).length}`;
-const exampleRate = document.querySelector('#example-rate');
-
-if (exampleRate) {
-    exampleRate.remove();
-}
-
-
-
-// Виводить курс валют
-function showRates() {
-    for (const currency of Object.keys(rates)) {
-        console.log(`${currency}: ${rates[currency]}`);
-    }
-}
-// чи є сума конвертації великою
-function checkAmount(result, threshold) {
-    if (result > threshold) {
-        console.log('Велика сума');
-    } else {
-        console.log('Звичайна сума');
-    }
-}
-showRates();
-checkAmount(1500, 1000);
-
-// Конвертує суму за курсом
-const convert = (amount, rate) => amount * rate;
-
-const result = convert(100, rates.UAH);
-
-console.log('Результат конвертації:', result);
-
-const amountInput = document.querySelector('#amount');
-const fromUnit = document.querySelector('#from-unit');
-const toUnit = document.querySelector('#to-unit');
-const resultElement = document.querySelector('#result');
-
-const historyList = document.querySelector('#history-list');
-const historyCount = document.querySelector('#history-count');
-
-const history = [];
-
-// Форма конвертації
-const form = document.querySelector('#conversion-form');
-form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    if (!form.reportValidity()) {
-        return;
-    }
-    const amount = Number(amountInput.value);
-    const from = fromUnit.value;
-    const to = toUnit.value;
-    amountInput.addEventListener('input', () => {
-        if (
-            amountInput.value !== '' &&
-            Number(amountInput.value) <= 0
-        ) {
-            amountInput.setCustomValidity(
-                'Сума має бути додатною'
-            );
-        } else {
-            amountInput.setCustomValidity('');
-        }
-    });
-    const convertedAmount = convert(amount, rates[to.toUpperCase()] / rates[from.toUpperCase()]);
-
-    const conversion = {
-        amount: amount,
-        from: from,
-        to: to,
-        result: convertedAmount
-    };
-
-    history.push(conversion);
-    renderRates(
-        Object.fromEntries(
-            history.map((item, index) => [index + 1, item])
-        ),
-        historyList
-    );
-
-    historyCount.textContent =
-        `Кількість конвертацій: ${history.length}`;
-    form.reset();
-
-});
-// Оновлює результат конвертації та перевіряє правильність суми.
-function updateResult() {
-    const amount = Number(amountInput.value);
-
-    if (
-        amountInput.value.trim() === '' ||
-        !Number.isFinite(amount) ||
-        amount <= 0
-    ) {
-        resultElement.textContent =
-            'Введіть додатну суму для конвертації.';
-        return;
-    }
-
-    const from = fromUnit.value.toUpperCase();
-    const to = toUnit.value.toUpperCase();
-
-    const rate = rates[to] / rates[from];
-    const convertedAmount = convert(amount, rate);
-
-    resultElement.textContent =
-        `${amount} ${from} = ${convertedAmount.toFixed(2)} ${to}`;
-}
-
-fromUnit.addEventListener('change', updateResult);
-toUnit.addEventListener('change', updateResult);
